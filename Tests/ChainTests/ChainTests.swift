@@ -3,12 +3,48 @@ import XCTest
 
 final class ChainTests: XCTestCase {
     func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
-        XCTAssertEqual(Chain().text, "Hello, World!")
+        var isLooping = true
+        
+        var text = ""
+        
+        
+        Chain.link(
+            { print(0) },
+            .link(
+                { print(1) },
+                .background(
+                    { print(2)
+                        sleep(3)
+                    },
+                    .link(
+                        { print(3) },
+                          .complete {
+                            text = "Hello, World?"
+                          }
+                    )
+                )
+            )
+        )
+        .run()
+        
+        Chain.background(
+            {
+                sleep(5)
+            },
+            .link(
+                {
+                    XCTAssertEqual(text, "Hello, World!")
+                },
+                .complete {
+                        isLooping = false
+                }
+            )
+        )
+        .run()
+        
+        while isLooping { }
     }
-
+    
     static var allTests = [
         ("testExample", testExample),
     ]
