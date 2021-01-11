@@ -1,3 +1,11 @@
 # Chain
 
-A description of this package.
+> Chain.link.complete
+
+```swift
+Chain.link(
+    { print("Chain.link") },
+    .complete { print("Chain.complete") }
+)
+.run()
+```
