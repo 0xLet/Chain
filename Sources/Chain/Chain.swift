@@ -11,21 +11,24 @@ public indirect enum Chain {
 }
 
 public extension Chain {
-    func run() {
+    func run(name: String? = nil) {
+        var logInfo: String {
+            "[\(Date())] Chain\(name.map { " (\($0)) "} ?? ""):"
+        }
         switch self {
         case .end:
-            print("[\(Date())] Chain: End")
+            print("\(logInfo) End")
         case .complete(let completion):
-            print("[\(Date())] Chain: Complete")
+            print("\(logInfo) Complete")
             completion?()
         case .link(let action,
                    let next):
-            print("[\(Date())] Chain: Link")
+            print("\(logInfo) Link")
             action()
             next.run()
         case .background(let action,
                          let next):
-            print("[\(Date())] Chain: Background")
+            print("\(logInfo) Background")
             DispatchQueue.global().async {
                 action()
                 DispatchQueue.main.async {
@@ -33,7 +36,7 @@ public extension Chain {
                 }
             }
         case .multi(let links):
-            print("[\(Date())] Chain: Multi")
+            print("\(logInfo) Multi")
             links.forEach { $0.run() }
         }
     }
