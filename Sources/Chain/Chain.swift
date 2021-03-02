@@ -1,12 +1,11 @@
 import Foundation
-
-public typealias ChainAction = () -> Void
+import E
 
 public indirect enum Chain {
     case end
-    case complete(ChainAction?)
-    case link(ChainAction, Chain)
-    case background(ChainAction, Chain)
+    case complete(E.Function?)
+    case link(E.Function, Chain)
+    case background(E.Function, Chain)
     case multi([Chain])
 }
 
