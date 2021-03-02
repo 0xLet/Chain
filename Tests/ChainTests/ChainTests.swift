@@ -6,34 +6,35 @@ final class ChainTests: XCTestCase {
         var text = ""
         var isLooping = false
         
-        Chain.link(
-            { print(0) },
+        let output = Chain.link(
+            .void { print(0) },
             .link(
-                { print(1) },
+                .void { print(1) },
                 .multi(
                     [
                         .background(
-                            {
+                            .void {
                                 print("Loading...")
                                 sleep(5)
                                 print("Loading Done!")
                                 isLooping = false
                             },
-                            .complete {
-                            }
+                            .complete(.void {
+                                XCTAssertEqual(isLooping, false)
+                            })
                         ),
                         
                         .link(
-                            {
+                            .void {
                                 isLooping = true
                                 while isLooping { }
                             },
-                            .complete {
+                            .complete(.void {
                                 text = "Hello, World!"
-                            }
+                            })
                         )
                         
-                       
+                        
                     ]
                 )
             )
@@ -41,6 +42,54 @@ final class ChainTests: XCTestCase {
         .run(name: "ChainTests-testExample")
         
         XCTAssertEqual(text, "Hello, World!")
+        
+        guard case .array(let values) = output else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertNotEqual(values.count, 0)
+    }
+    
+    func testOutput() {
+        let output = Chain.link(
+            .out { "First" },
+            .link( .in {
+                print("Value: \($0)")
+            }, .multi(
+                [
+                    .multi([
+                        .end,
+                        .end,
+                        .end
+                    ]),
+                    .link(.out {
+                        "Link"
+                    }, .link(
+                        .out { "Last" },
+                        .complete(.inout { value in
+                            guard case .string(let value) = value else {
+                                XCTFail()
+                                return .void
+                            }
+                            
+                            return  .string("\(value) !!!")
+                        })
+                    ))
+                ]
+            ))
+            
+        )
+        .run(name: "ChainTests-testOutput", shouldFlattenOutput: true)
+        
+        guard case .array(let values) = output else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(values[0], .string("First"))
+        XCTAssertEqual(values.last, .string("Last !!!"))
+        XCTAssertEqual(values.count, 8)
     }
     
     static var allTests = [
