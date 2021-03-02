@@ -1,4 +1,18 @@
-# Chain
+# Chain ⛓
+
+*Chain of events*
+
+Use an enum to structure the call stack.
+
+```swift
+public indirect enum Chain {
+    case end
+    case complete(E.Function?)
+    case link(E.Function, Chain)
+    case background(E.Function, Chain)
+    case multi([Chain])
+}
+```
 
 ## Example Code
 ```swift
