@@ -19,9 +19,11 @@ final class ChainTests: XCTestCase {
                                 print("Loading Done!")
                                 isLooping = false
                             },
-                            .complete(.void {
-                                XCTAssertEqual(isLooping, false)
-                            })
+                            .complete(
+                                .void {
+                                    XCTAssertEqual(isLooping, false)
+                                }
+                            )
                         ),
                         
                         .link(
@@ -29,12 +31,12 @@ final class ChainTests: XCTestCase {
                                 isLooping = true
                                 while isLooping { }
                             },
-                            .complete(.void {
-                                text = "Hello, World!"
-                            })
+                            .complete(
+                                .void {
+                                    text = "Hello, World!"
+                                }
+                            )
                         )
-                        
-                        
                     ]
                 )
             )
@@ -54,31 +56,39 @@ final class ChainTests: XCTestCase {
     func testOutput() {
         let output = Chain.link(
             .out { "First" },
-            .link( .in {
-                print("Value: \($0)")
-            }, .multi(
-                [
-                    .multi([
-                        .end,
-                        .end,
-                        .end
-                    ]),
-                    .link(.out {
-                        "Link"
-                    }, .link(
-                        .out { "Last" },
-                        .complete(.inout { value in
-                            guard case .string(let value) = value else {
-                                XCTFail()
-                                return .void
-                            }
-                            
-                            return  .string("\(value) !!!")
-                        })
-                    ))
-                ]
-            ))
-            
+            .link(
+                .in {
+                    print("Value: \($0)")
+                },
+                .multi(
+                    [
+                        .multi(
+                            [
+                                .end,
+                                .end,
+                                .end
+                            ]
+                        ),
+                        .link(
+                            .out {
+                                "Link"
+                            }, .link(
+                                .out { "Last" },
+                                .complete(
+                                    .inout { value in
+                                        guard case .string(let value) = value else {
+                                            XCTFail()
+                                            return .void
+                                        }
+                                        
+                                        return  .string("\(value) !!!")
+                                    }
+                                )
+                            )
+                        )
+                    ]
+                )
+            )
         )
         .run(name: "ChainTests-testOutput", shouldFlattenOutput: true)
         
@@ -92,7 +102,27 @@ final class ChainTests: XCTestCase {
         XCTAssertEqual(values.count, 8)
     }
     
+    func testChainStep() {
+        let chain = Chain.link(
+            .out {
+                "First"
+            },
+            .link(
+                .inout {
+                    .string("Value: \($0)")
+                },
+                .end
+            )
+        )
+        
+        XCTAssertEqual(chain.run().flatten, .array([.string("First"), .string("Value: string(\"First\")"), .void]))
+        XCTAssertEqual(chain.step(), .string("First"))
+        XCTAssertEqual(chain.dropHead()?.step(withInput: .float(3.14)), .string("Value: float(3.14)"))
+    }
+    
     static var allTests = [
         ("testExample", testExample),
+        ("testOutput", testOutput),
+        ("testChainStep", testChainStep)
     ]
 }
