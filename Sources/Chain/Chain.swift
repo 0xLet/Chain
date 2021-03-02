@@ -71,4 +71,28 @@ public extension Chain {
         
         return output
     }
+    
+    func step(withInput input: Variable? = nil) -> Variable {
+        switch self {
+        case .end:
+            return .void
+        case .complete(let function):
+            return function?.run(input) ?? .void
+        case .background(let function, _), .link(let function, _):
+            return function.run(input) ?? .void
+        case .multi(let chains):
+            return .array(chains.compactMap { $0.step(withInput: input) })
+        }
+    }
+    
+    func dropHead() -> Chain? {
+        switch self {
+        case .end, .complete(_):
+            return nil
+        case .background(_, let next), .link(_, let next):
+            return next
+        case .multi(let chains):
+            return .multi(chains.compactMap { $0.dropHead() })
+        }
+    }
 }
