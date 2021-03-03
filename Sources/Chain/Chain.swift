@@ -13,38 +13,34 @@ public extension Chain {
     func run(
         name: String? = nil,
         input: Variable? = nil,
-        shouldFlattenOutput: Bool = false
+        logging: Bool = false
     ) -> Variable {
-        var logInfo: String {
-            "[\(Date())] Chain\(name.map { " (\($0)) "} ?? ""):"
-        }
         var output: Variable = .array([])
+        
+        log(functionName: "run",
+            name: name,
+            logging: logging)
         
         switch self {
         case .end:
-            print("\(logInfo) End")
-            
             output = output.update {
                 .array($0 + [Variable.void])
             }
         case .complete(let completion):
-            print("\(logInfo) Complete")
-            
             output = output.update {
                 .array($0 + [completion?.run(input) ?? Variable.void])
             }
         case .link(let action,
                    let next):
-            print("\(logInfo) Link")
-            
             let actionOutput: Variable = action.run(input) ?? Variable.void
             
             output = output.update {
-                .array($0 + [actionOutput] + [next.run(name: name, input: actionOutput)])
+                .array($0 + [actionOutput] + [next.run(name: name,
+                                                       input: actionOutput,
+                                                       logging: logging)])
             }
         case .background(let action,
                          let next):
-            print("\(logInfo) Background")
             DispatchQueue.global().async {
                 let actionOutput: Variable = action.run(input) ?? Variable.void
                 
@@ -53,26 +49,31 @@ public extension Chain {
                 }
                 DispatchQueue.main.async {
                     output = output.update {
-                        .array($0 + [next.run(name: name, input: actionOutput)])
+                        .array($0 + [next.run(name: name,
+                                              input: actionOutput,
+                                              logging: logging)])
                     }
                 }
             }
         case .multi(let links):
-            print("\(logInfo) Multi")
             output = output.update {
-                .array($0 + links.map { $0.run(name: name) })
+                .array($0 + links.map { $0.run(name: name,
+                                               logging: logging) })
             }
-        }
-        
-        // Flatten Output
-        if shouldFlattenOutput {
-            return output.flatten
         }
         
         return output
     }
     
-    func step(withInput input: Variable? = nil) -> Variable {
+    func runHead(
+        name: String? = nil,
+        input: Variable? = nil,
+        logging: Bool = false
+    ) -> Variable {
+        log(functionName: "runHead",
+            name: name,
+            logging: logging)
+        
         switch self {
         case .end:
             return .void
@@ -81,7 +82,7 @@ public extension Chain {
         case .background(let function, _), .link(let function, _):
             return function.run(input) ?? .void
         case .multi(let chains):
-            return .array(chains.compactMap { $0.step(withInput: input) })
+            return .array(chains.compactMap { $0.runHead(input: input) })
         }
     }
     
@@ -92,7 +93,37 @@ public extension Chain {
         case .background(_, let next), .link(_, let next):
             return next
         case .multi(let chains):
+            guard !chains.isEmpty else {
+                return nil
+            }
             return .multi(chains.compactMap { $0.dropHead() })
+        }
+    }
+}
+
+internal extension Chain {
+    func log(
+        functionName: String,
+        name: String?,
+        logging: Bool
+    ) {
+        var logInfo: String {
+            "[\(Date())] Chain.\(functionName)\(name.map { " (\($0)) "} ?? ""):"
+        }
+        
+        if logging {
+            switch self {
+            case .end:
+                print("\(logInfo) End")
+            case .complete:
+                print("\(logInfo) Complete")
+            case .link:
+                print("\(logInfo) Link")
+            case .background:
+                print("\(logInfo) Background")
+            case .multi:
+                print("\(logInfo) Multi")
+            }
         }
     }
 }
