@@ -81,9 +81,8 @@ final class ChainTests: XCTestCase {
                             ]
                         ),
                         .link(
-                            .out {
-                                "Link"
-                            }, .link(
+                            .out { "Link" },
+                            .link(
                                 .out { "Last" },
                                 .complete(
                                     .inout { value in
