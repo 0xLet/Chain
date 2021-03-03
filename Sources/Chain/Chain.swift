@@ -44,15 +44,11 @@ public extension Chain {
             DispatchQueue.global().async {
                 let actionOutput: Variable = action.run(input) ?? Variable.void
                 
-                output = output.update {
-                    .array($0 + [actionOutput])
-                }
                 DispatchQueue.main.async {
-                    output = output.update {
-                        .array($0 + [next.run(name: name,
-                                              input: actionOutput,
-                                              logging: logging)])
-                    }
+                    _ = next.run(name: name,
+                                 input: actionOutput,
+                                 logging: logging)
+                    
                 }
             }
         case .multi(let links):
@@ -79,7 +75,9 @@ public extension Chain {
             return .void
         case .complete(let function):
             return function?.run(input) ?? .void
-        case .background(let function, _), .link(let function, _):
+        case .background(let function, _):
+            return Chain.background(function, .end).run(name: name, input: input, logging: logging)
+        case .link(let function, _):
             return function.run(input) ?? .void
         case .multi(let chains):
             return .array(chains.compactMap { $0.runHead(input: input) })
@@ -108,7 +106,7 @@ internal extension Chain {
         logging: Bool
     ) {
         var logInfo: String {
-            "[\(Date())] Chain.\(functionName)\(name.map { " (\($0)) "} ?? ""):"
+            "[\(Date())] Chain.\(functionName)\(name.map { " (\($0))"} ?? ""):"
         }
         
         if logging {
