@@ -1,4 +1,5 @@
 import XCTest
+import E
 @testable import Chain
 
 final class ChainTests: XCTestCase {
@@ -7,9 +8,15 @@ final class ChainTests: XCTestCase {
         var isLooping = false
         
         let output = Chain.link(
-            .void { print(0) },
+            .out {
+                print(0)
+                return 0
+            },
             .link(
-                .void { print(1) },
+                .out {
+                    print(1)
+                    return 1
+                },
                 .multi(
                     [
                         .background(
@@ -20,20 +27,24 @@ final class ChainTests: XCTestCase {
                                 isLooping = false
                             },
                             .complete(
-                                .void {
+                                .out {
                                     XCTAssertEqual(isLooping, false)
+                                    
+                                    return .string("Done Loading")
                                 }
                             )
                         ),
                         
                         .link(
-                            .void {
+                            .out {
                                 isLooping = true
                                 while isLooping { }
+                                return .string("Done Looping")
                             },
                             .complete(
-                                .void {
+                                .out {
                                     text = "Hello, World!"
+                                    return "Complete"
                                 }
                             )
                         )
@@ -121,9 +132,36 @@ final class ChainTests: XCTestCase {
         XCTAssertEqual(chain.dropHead()?.runHead(input: .float(3.14), logging: true), .string("Value: float(3.14)"))
     }
     
+    func testBackgroundOutput() {
+        let chain = Chain.link(
+            .out {
+                "First"
+            },
+            .background(
+                .inout {
+                    sleep(3)
+                    return .string("Value: \($0)")
+                },
+                .complete(
+                    .inout {
+                        print("HERE: \($0)")
+                        return "HERE"
+                    }
+                )
+            )
+        )
+        
+        XCTAssertEqual(chain.run(name: "chain.run", logging: true).flatten, .array([.string("First")]))
+        XCTAssertEqual(chain.runHead(name: "chain.runHead", logging: true), .string("First"))
+        XCTAssertEqual(chain.dropHead()?.runHead(name: "chain.dropHead()?.runHead", input: .float(3.14), logging: true), .array([]))
+        
+        sleep(6)
+    }
+    
     static var allTests = [
         ("testExample", testExample),
         ("testOutput", testOutput),
-        ("testChainStep", testChainStep)
+        ("testChainStep", testChainStep),
+        ("testBackgroundOutput", testBackgroundOutput)
     ]
 }
