@@ -15,7 +15,7 @@ final class ChainTests: XCTestCase {
                         .background(
                             .void {
                                 print("Loading...")
-                                sleep(5)
+                                sleep(1)
                                 print("Loading Done!")
                                 isLooping = false
                             },
@@ -41,7 +41,7 @@ final class ChainTests: XCTestCase {
                 )
             )
         )
-        .run(name: "ChainTests-testExample")
+        .run(name: "ChainTests-testExample", logging: true)
         
         XCTAssertEqual(text, "Hello, World!")
         
@@ -90,7 +90,8 @@ final class ChainTests: XCTestCase {
                 )
             )
         )
-        .run(name: "ChainTests-testOutput", shouldFlattenOutput: true)
+        .run(name: "ChainTests-testOutput", logging: true)
+        .flatten
         
         guard case .array(let values) = output else {
             XCTFail()
@@ -115,9 +116,9 @@ final class ChainTests: XCTestCase {
             )
         )
         
-        XCTAssertEqual(chain.run().flatten, .array([.string("First"), .string("Value: string(\"First\")"), .void]))
-        XCTAssertEqual(chain.step(), .string("First"))
-        XCTAssertEqual(chain.dropHead()?.step(withInput: .float(3.14)), .string("Value: float(3.14)"))
+        XCTAssertEqual(chain.run(logging: true).flatten, .array([.string("First"), .string("Value: string(\"First\")"), .void]))
+        XCTAssertEqual(chain.runHead(logging: true), .string("First"))
+        XCTAssertEqual(chain.dropHead()?.runHead(input: .float(3.14), logging: true), .string("Value: float(3.14)"))
     }
     
     static var allTests = [
