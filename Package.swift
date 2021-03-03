@@ -23,9 +23,14 @@ let package = Package(
             name: "Chain",
             dependencies: [
                 "E"
-            ]),
+            ]
+        ),
         .testTarget(
             name: "ChainTests",
-            dependencies: ["Chain"]),
+            dependencies: [
+                "E",
+                "Chain"
+            ]
+        ),
     ]
 )
