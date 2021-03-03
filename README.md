@@ -17,33 +17,42 @@ public indirect enum Chain {
 ## Example Code
 ```swift
 let output = Chain.link(
-            .out { "First" },
-            .link( .in {
-                print("Value: \($0)")
-            }, .multi(
-                [
-                    .multi([
+    .out { "First" },
+    .link(
+        .in {
+            print("Value: \($0)")
+        },
+        .multi(
+            [
+                .multi(
+                    [
                         .end,
                         .end,
                         .end
-                    ]),
-                    .link(.out {
+                    ]
+                ),
+                .link(
+                    .out {
                         "Link"
                     }, .link(
                         .out { "Last" },
-                        .complete(.inout { value in
-                            guard case .string(let value) = value else {
-                                XCTFail()
-                                return .void
+                        .complete(
+                            .inout { value in
+                                guard case .string(let value) = value else {
+                                    XCTFail()
+                                    return .void
+                                }
+                                
+                                return  .string("\(value) !!!")
                             }
-                            
-                            return  .string("\(value) !!!")
-                        })
-                    ))
-                ]
-            ))
+                        )
+                    )
+                )
+            ]
         )
-        .run(name: "ChainTests-testOutput")
+    )
+)
+.run(name: "ChainTests-testOutput")
 ```
 
 ## Normal Chain Output
